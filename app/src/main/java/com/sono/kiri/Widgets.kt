@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.text.SpannableStringBuilder
@@ -25,7 +26,12 @@ object Kiri {
         "Respira. Isso, devagar. Pronto.",
         "Eu fico aqui. Não é muito, mas é constante."
     )
-    private val WD = arrayOf("Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb")
+    private val WD_PT = arrayOf("Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb")
+    private val WD_EN = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    private val WD_ZH = arrayOf("日", "一", "二", "三", "四", "五", "六")
+    private var lang = "pt"
+    private fun tl(pt: String, en: String, zh: String): String = when (lang) { "en" -> en; "zh" -> zh; else -> pt }
+    private fun days(n: Int): String = tl(if (n == 1) "$n dia" else "$n dias", if (n == 1) "$n day" else "$n days", "$n 天")
     private val COL = intArrayOf(R.id.c0, R.id.c1, R.id.c2, R.id.c3, R.id.c4, R.id.c5, R.id.c6)
     private val NAME = intArrayOf(R.id.n0, R.id.n1, R.id.n2, R.id.n3, R.id.n4, R.id.n5, R.id.n6)
     private val NUM = intArrayOf(R.id.d0, R.id.d1, R.id.d2, R.id.d3, R.id.d4, R.id.d5, R.id.d6)
@@ -35,7 +41,7 @@ object Kiri {
     private fun data(ctx: Context): JSONObject? {
         val s = ctx.getSharedPreferences("kiri", Context.MODE_PRIVATE).getString("data", null) ?: return null
         return try {
-            JSONObject(s)
+            JSONObject(s).also { lang = it.optString("lang", "pt") }
         } catch (e: Exception) {
             null
         }
@@ -94,16 +100,41 @@ object Kiri {
         v.setOnClickPendingIntent(id, pi)
     }
 
-    private fun mascot(ctx: Context, v: RemoteViews, id: Int) {
-        val f = File(ctx.filesDir, "mascot.png")
-        if (f.exists()) {
+    private fun pickFile(ctx: Context, vararg names: String): File? {
+        for (n in names) {
+            val f = File(ctx.filesDir, n)
+            if (f.exists()) return f
+        }
+        return null
+    }
+
+    private fun mascot(ctx: Context, v: RemoteViews, id: Int, kind: String = "body") {
+        val sl = sleepy()
+        val f = when (kind) {
+            "face" -> pickFile(ctx, "mascot_closeup.png", "mascot_face.png", "mascot.png")
+            "pet" -> pickFile(ctx, "mascot_petimg.png") ?: (if (sl) pickFile(ctx, "mascot_sleep.png", "mascot.png") else pickFile(ctx, "mascot_sit.png", "mascot.png"))
+            else -> if (sl) pickFile(ctx, "mascot_sleep.png", "mascot.png") else pickFile(ctx, "mascot.png")
+        }
+        if (f != null) {
             val b = BitmapFactory.decodeFile(f.path)
             if (b != null) {
                 v.setImageViewBitmap(id, b)
                 return
             }
         }
-        v.setImageViewResource(id, if (sleepy()) R.drawable.kiri_sleep else R.drawable.kiri)
+        val skin = data(ctx)?.optString("skin", "kiri20") ?: "kiri20"
+        val res = when {
+            skin == "kiri20" && kind == "face" -> when (data(ctx)?.optInt("face", 0) ?: 0) {
+                1 -> R.drawable.kiri20_face2
+                else -> R.drawable.kiri20_face
+            }
+            skin == "kiri20" && kind == "pet" && !sl -> R.drawable.kiri20_sit
+            skin == "kiri20" -> if (sl) R.drawable.kiri20_sleep else R.drawable.kiri20
+            skin == "kiri2" -> if (sl) R.drawable.kiri2_sleep else R.drawable.kiri2
+            skin == "nino" -> if (sl) R.drawable.nino_sleep else R.drawable.nino
+            else -> if (sl) R.drawable.kiri_sleep else R.drawable.kiri
+        }
+        v.setImageViewResource(id, res)
     }
 
     private fun addColored(sb: SpannableStringBuilder, text: String, c: Int) {
@@ -129,7 +160,7 @@ object Kiri {
         } else if (hol != null) {
             addColored(sb, hol, color(d?.optString("hol"), Color.RED))
         } else {
-            sb.append("Hoje livre")
+            sb.append(tl("Hoje livre", "Free today", "今天沒有安排"))
         }
         val ev = day?.optJSONArray("e")
         if (ev != null && ev.length() > 0) {
@@ -148,7 +179,7 @@ object Kiri {
                     val e = ev.optJSONArray(i) ?: continue
                     addColored(sb, "●", color(e.optString(2), Color.WHITE))
                 }
-                sb.append(" ").append(ev.length().toString()).append(" hoje")
+                sb.append(" ").append(ev.length().toString()).append(tl(" hoje", " today", " 件"))
             }
         }
         return sb
@@ -156,7 +187,7 @@ object Kiri {
 
     fun buildPet(ctx: Context): RemoteViews {
         val v = RemoteViews(ctx.packageName, R.layout.widget_kiri)
-        mascot(ctx, v, R.id.img)
+        mascot(ctx, v, R.id.img, "pet")
         openApp(ctx, v, R.id.root)
         return v
     }
@@ -164,18 +195,99 @@ object Kiri {
     fun buildTalk(ctx: Context): RemoteViews {
         val d = data(ctx)
         val v = RemoteViews(ctx.packageName, R.layout.widget_talk)
-        v.setTextViewText(R.id.line, if (sleepy()) "Zzz… boa noite." else dailyLine(d, 1))
+        v.setTextViewText(R.id.line, if (sleepy()) tl("Zzz… boa noite.", "Zzz… good night.", "Zzz… 晚安。") else dailyLine(d, 1))
         openApp(ctx, v, R.id.root)
         return v
     }
 
     fun buildBubble(ctx: Context): RemoteViews {
         val d = data(ctx)
-        val v = RemoteViews(ctx.packageName, R.layout.widget_bubble)
+        val right = d?.optString("side", "esq") == "dir"
+        val v = RemoteViews(ctx.packageName, if (right) R.layout.widget_bubble_r else R.layout.widget_bubble)
         background(v, R.id.root, clear(d, "med"))
-        mascot(ctx, v, R.id.img)
-        v.setTextViewText(R.id.line, if (sleepy()) "Zzz… amanhã a gente continua." else dailyLine(d, 0))
+        mascot(ctx, v, R.id.img, "face")
+        v.setTextViewText(R.id.line, if (sleepy()) tl("Zzz… amanhã a gente continua.", "Zzz… let's continue tomorrow.", "Zzz… 明天再繼續吧。") else dailyLine(d, 0))
         v.setTextViewText(R.id.today, todaySummary(d, false))
+        openApp(ctx, v, R.id.root)
+        return v
+    }
+
+    private fun dayIndex(k: String): Long {
+        val p = k.split("-")
+        if (p.size != 3) return 0L
+        val c = Calendar.getInstance()
+        c.clear()
+        c.set(p[0].toIntOrNull() ?: 2000, (p[1].toIntOrNull() ?: 1) - 1, p[2].toIntOrNull() ?: 1, 12, 0, 0)
+        return Math.round(c.timeInMillis / 86400000.0)
+    }
+
+    fun buildCounter(ctx: Context): RemoteViews {
+        val d = data(ctx)
+        val v = RemoteViews(ctx.packageName, R.layout.widget_counter)
+        val cw = d?.optJSONObject("cw")
+        if (cw == null) {
+            v.setTextViewText(R.id.name, tl("Contador de dias", "Day counter", "倒數日"))
+            v.setTextViewText(R.id.big, "D-?")
+            v.setTextViewText(R.id.sub, tl("Crie um na aba D-day", "Create one in the D-day tab", "請在倒數日分頁新增"))
+        } else {
+            val today = dayIndex(key(Calendar.getInstance()))
+            val target = dayIndex(cw.optString("d"))
+            val big: String
+            val sub: String
+            if (cw.optString("m") == "desde") {
+                val n = (today - target + (if (cw.optBoolean("f", false)) 1 else 0)).toInt()
+                if (n < 0) {
+                    big = "D" + n
+                    sub = tl("começa em " + days(-n), "starts in " + days(-n), days(-n) + "後開始")
+                } else {
+                    big = "D+" + n
+                    sub = days(n)
+                }
+            } else {
+                val n = (target - today).toInt()
+                when {
+                    n > 0 -> {
+                        big = "D-" + n
+                        sub = tl("faltam " + days(n), days(n) + " left", "還有 " + days(n))
+                    }
+                    n == 0 -> {
+                        big = tl("Dia D!", "D-Day!", "就是今天！")
+                        sub = tl("é hoje!", "it's today!", "就是今天！")
+                    }
+                    else -> {
+                        big = "D+" + (-n)
+                        sub = tl("passou há " + days(-n), days(-n) + " ago", "已過 " + days(-n))
+                    }
+                }
+            }
+            v.setTextViewText(R.id.name, cw.optString("n", tl("Contador", "Counter", "倒數日")))
+            v.setTextViewText(R.id.big, big)
+            v.setTextViewText(R.id.sub, sub)
+            val fg = color(cw.optString("fg", ""), Color.WHITE)
+            val num = color(cw.optString("num", ""), fg)
+            v.setTextColor(R.id.name, fg)
+            v.setTextColor(R.id.sub, fg)
+            v.setTextColor(R.id.big, num)
+        }
+        val f = File(ctx.filesDir, "counter.jpg")
+        val img = if (f.exists()) BitmapFactory.decodeFile(f.path) else null
+        if (img != null) {
+            v.setImageViewBitmap(R.id.bg, img)
+            val shade = cw?.optBoolean("shade", true) ?: true
+            v.setViewVisibility(R.id.shade, if (shade) android.view.View.VISIBLE else android.view.View.GONE)
+        } else {
+            val base = color(cw?.optString("c"), Color.parseColor("#7C8CF0"))
+            val chosen = color(cw?.optString("bg", ""), 0)
+            val dark = if (chosen != 0) chosen else Color.rgb(
+                (Color.red(base) * 0.55 + 16 * 0.45).toInt(),
+                (Color.green(base) * 0.55 + 20 * 0.45).toInt(),
+                (Color.blue(base) * 0.55 + 26 * 0.45).toInt()
+            )
+            val bmp = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            bmp.eraseColor(dark)
+            v.setImageViewBitmap(R.id.bg, bmp)
+            v.setViewVisibility(R.id.shade, if (chosen != 0) android.view.View.GONE else android.view.View.VISIBLE)
+        }
         openApp(ctx, v, R.id.root)
         return v
     }
@@ -195,7 +307,7 @@ object Kiri {
             val day = days?.optJSONObject(k)
             val dow = c.get(Calendar.DAY_OF_WEEK)
             val red = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY || holidayName(day) != null
-            v.setTextViewText(NAME[i], WD[dow - 1])
+            v.setTextViewText(NAME[i], (if (lang == "en") WD_EN else if (lang == "zh") WD_ZH else WD_PT)[dow - 1])
             v.setTextColor(NAME[i], if (red) holColor else 0xB3FFFFFF.toInt())
             v.setTextViewText(NUM[i], c.get(Calendar.DAY_OF_MONTH).toString())
             v.setTextColor(NUM[i], if (red) holColor else Color.WHITE)
@@ -222,7 +334,11 @@ object Kiri {
             v.setInt(COL[i], "setBackgroundColor", bg)
             c.add(Calendar.DAY_OF_MONTH, 1)
         }
-        v.setTextViewText(R.id.date, SimpleDateFormat("d 'de' MMM", Locale("pt", "BR")).format(Date()))
+        v.setTextViewText(R.id.date, when (lang) {
+            "en" -> SimpleDateFormat("MMM d", Locale.US)
+            "zh" -> SimpleDateFormat("M月d日", Locale.TRADITIONAL_CHINESE)
+            else -> SimpleDateFormat("d 'de' MMM", Locale("pt", "BR"))
+        }.format(Date()))
         v.setTextViewText(R.id.today, todaySummary(d, true))
         openApp(ctx, v, R.id.root)
         return v
@@ -249,6 +365,10 @@ class BubbleWidget : KiriBaseWidget() {
     override fun build(ctx: Context): RemoteViews = Kiri.buildBubble(ctx)
 }
 
+class CounterWidget : KiriBaseWidget() {
+    override fun build(ctx: Context): RemoteViews = Kiri.buildCounter(ctx)
+}
+
 class WeekWidget : KiriBaseWidget() {
     override fun build(ctx: Context): RemoteViews = Kiri.buildWeek(ctx)
 }
@@ -260,7 +380,8 @@ object WidgetUpdater {
             Pair(KiriWidget::class.java, { c: Context -> Kiri.buildPet(c) }),
             Pair(TalkWidget::class.java, { c: Context -> Kiri.buildTalk(c) }),
             Pair(BubbleWidget::class.java, { c: Context -> Kiri.buildBubble(c) }),
-            Pair(WeekWidget::class.java, { c: Context -> Kiri.buildWeek(c) })
+            Pair(WeekWidget::class.java, { c: Context -> Kiri.buildWeek(c) }),
+            Pair(CounterWidget::class.java, { c: Context -> Kiri.buildCounter(c) })
         )
         for ((cls, build) in all) {
             val ids = m.getAppWidgetIds(ComponentName(ctx, cls))

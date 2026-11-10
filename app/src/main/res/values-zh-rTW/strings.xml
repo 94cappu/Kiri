@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kiri</string>
+    <string name="w_kiri">Kiri</string>
+    <string name="w_talk">Kiri 的一句話</string>
+    <string name="w_bubble">Kiri 對話框</string>
+    <string name="w_week">本週</string>
+    <string name="d_kiri">把 Kiri 放在主畫面</string>
+    <string name="d_talk">Kiri 每天說一句話</string>
+    <string name="d_bubble">Kiri、今日一句與今天的安排</string>
+    <string name="w_counter">倒數日</string>
+    <string name="d_counter">App 中選擇的倒數日</string>
+    <string name="d_week">週一到週日，含標記與提醒</string>
+    <string name="ch_name">提醒</string>
+    <string name="ch_desc">Kiri 的提醒</string>
+</resources>

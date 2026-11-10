@@ -1,10 +1,15 @@
 package com.sono.kiri
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -31,7 +36,14 @@ class MainActivity : Activity() {
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.settings.mediaPlaybackRequiresUserGesture = false
-        web.addJavascriptInterface(Bridge(applicationContext), "KiriBridge")
+        web.addJavascriptInterface(
+            Bridge(
+                applicationContext,
+                { dark -> runOnUiThread { applyBars(dark) } },
+                { runOnUiThread { askNotifPermission() } }
+            ),
+            "KiriBridge"
+        )
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -76,6 +88,25 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun askNotifPermission() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), ASK_NOTIF)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun applyBars(dark: Boolean) {
+        val c = if (dark) Color.parseColor("#121B22") else Color.parseColor("#EEF3F6")
+        window.statusBarColor = c
+        window.navigationBarColor = c
+        web.setBackgroundColor(c)
+        val light = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        val flags = window.decorView.systemUiVisibility
+        window.decorView.systemUiVisibility = if (dark) flags and light.inv() else flags or light
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("DEPRECATION")
@@ -115,5 +146,6 @@ class MainActivity : Activity() {
 
     companion object {
         private const val PICK_FILE = 42
+        private const val ASK_NOTIF = 43
     }
 }

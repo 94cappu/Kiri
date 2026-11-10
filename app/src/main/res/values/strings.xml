@@ -2,11 +2,15 @@
 <resources>
     <string name="app_name">Kiri</string>
     <string name="w_kiri">Kiri</string>
-    <string name="w_talk">Fala da Kiri</string>
-    <string name="w_bubble">Kiri com balão</string>
-    <string name="w_week">Semana</string>
-    <string name="d_kiri">A Kiri na sua tela inicial</string>
-    <string name="d_talk">Uma fala da Kiri por dia</string>
-    <string name="d_bubble">Kiri, a fala do dia e o que tem hoje</string>
-    <string name="d_week">Segunda a domingo com marcações e lembretes</string>
+    <string name="w_talk">Kiri\'s line</string>
+    <string name="w_bubble">Kiri with bubble</string>
+    <string name="w_week">Week</string>
+    <string name="d_kiri">Kiri on your home screen</string>
+    <string name="d_talk">One line from Kiri per day</string>
+    <string name="d_bubble">Kiri, the line of the day and what\'s on today</string>
+    <string name="w_counter">Day counter</string>
+    <string name="d_counter">D-day of the counter chosen in the app</string>
+    <string name="d_week">Monday to Sunday with marks and reminders</string>
+    <string name="ch_name">Reminders</string>
+    <string name="ch_desc">Kiri\'s reminders</string>
 </resources>

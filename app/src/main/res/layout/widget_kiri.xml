@@ -10,5 +10,5 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter"
-        android:src="@drawable/kiri" />
+        android:src="@drawable/kiri20" />
 </FrameLayout>
