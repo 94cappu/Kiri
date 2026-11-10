@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.sono.kiri'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.sono.kiri"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        kiri {
+            storeFile file('kiri.keystore')
+            storePassword 'kiri123456'
+            keyAlias 'kiri'
+            keyPassword 'kiri123456'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.kiri
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.kiri
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}

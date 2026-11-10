@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kiri</string>
+    <string name="w_kiri">Kiri</string>
+    <string name="w_talk">Fala da Kiri</string>
+    <string name="w_bubble">Kiri com balão</string>
+    <string name="w_week">Semana</string>
+    <string name="d_kiri">A Kiri na sua tela inicial</string>
+    <string name="d_talk">Uma fala da Kiri por dia</string>
+    <string name="d_bubble">Kiri, a fala do dia e o que tem hoje</string>
+    <string name="d_week">Segunda a domingo com marcações e lembretes</string>
+</resources>

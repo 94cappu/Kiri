@@ -1,0 +1,72 @@
+KIRI PARA ANDROID — PASSO A PASSO
+==================================
+
+Este é o projeto do app da Kiri com os widgets de verdade.
+O GitHub (grátis) monta o arquivo .apk pra você. Não precisa instalar nada no PC.
+
+PARTE 1 — SUBIR O PROJETO (no PC, uns 10 minutos)
+--------------------------------------------------
+1. Descompacte o kiri-android.zip.
+2. Crie uma conta em https://github.com (se ainda não tiver).
+3. Lá em cima, toque no "+" > "New repository".
+   - Repository name: kiri
+   - Pode deixar "Private" (só você vê).
+   - Toque em "Create repository".
+4. Na página que abrir, clique no link "uploading an existing file".
+5. Abra a pasta kiri-android que você descompactou, selecione TUDO que está
+   DENTRO dela (as pastas app, .github e os arquivos) e arraste pra página.
+   Espere todos os arquivos carregarem.
+6. Lá embaixo, clique em "Commit changes".
+
+   Se a pasta ".github" não subir (às vezes ela fica escondida):
+   - No repositório, abra a aba "Actions" > "set up a workflow yourself".
+   - Apague o que estiver escrito, abra o arquivo gerar-apk-COPIA.yml no
+     Bloco de Notas, copie tudo e cole lá.
+   - Clique em "Commit changes".
+
+PARTE 2 — ESPERAR O APK FICAR PRONTO (uns 5 minutos)
+-----------------------------------------------------
+7. Abra a aba "Actions". Vai aparecer "Gerar APK da Kiri" rodando (bolinha amarela).
+8. Quando ficar com o ✓ verde, volte pra página inicial do repositório.
+   Na coluna da direita, em "Releases", vai ter "Kiri versão 1".
+
+   Se ficar com um X vermelho: clique nele, depois em "build", copie o
+   texto do erro (as últimas linhas em vermelho) e mande pro Claude.
+
+PARTE 3 — INSTALAR NO CELULAR
+------------------------------
+9. No celular, entre em github.com com sua conta, abra o repositório kiri,
+   toque em "Releases" > "Kiri versão ..." > "Kiri.apk" pra baixar.
+10. Abra o arquivo baixado. O Android vai pedir permissão pra instalar
+    "apps desconhecidos" do navegador: permita.
+    Se aparecer o aviso do Play Protect, toque em "Mais detalhes" >
+    "Instalar mesmo assim" (é normal pra apps que não vêm da Play Store).
+11. Pronto! A Kiri aparece com ícone na tela inicial.
+
+PARTE 4 — LEVAR SEUS DADOS
+---------------------------
+- Onde você usava antes: aba Mascote > Backup > "Copiar backup".
+- Mande esse texto pra você mesmo (WhatsApp, e-mail…).
+- No app: aba Mascote > Backup > "Restaurar backup", cole e toque em "Restaurar agora".
+
+PARTE 5 — COLOCAR OS WIDGETS
+-----------------------------
+Segure o dedo num espaço vazio da tela inicial > Widgets > procure "Kiri".
+Tem 4 widgets:
+  - Kiri ............ só ela (2×2), dorme à noite
+  - Fala da Kiri .... balão escuro com a frase do dia (2×2)
+  - Kiri com balão .. ela + frase do dia + o que tem hoje (4×2)
+  - Semana .......... segunda a domingo com marcações e lembretes (4×2)
+Dá pra redimensionar segurando o widget.
+
+BATERIA
+-------
+O app não fica rodando escondido. Os widgets só se atualizam quando você
+muda algo no app e uma vez por hora (pra trocar a frase do dia e virar o dia
+da semana). Isso gasta praticamente nada.
+
+ATUALIZAÇÕES
+------------
+Quando o Claude te mandar arquivos novos, suba eles de novo no repositório
+(mesmo jeito do passo 4–6, ele substitui os antigos). Uma versão nova do APK
+aparece em Releases. Instale por cima: seus dados continuam.
