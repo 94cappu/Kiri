@@ -13,4 +13,6 @@
     <string name="d_week">週一到週日，含標記與提醒</string>
     <string name="ch_name">提醒</string>
     <string name="ch_desc">Kiri 的提醒</string>
+    <string name="w_big">Kiri + 兩週</string>
+    <string name="d_big">Kiri 的一句話與本週、下週</string>
 </resources>

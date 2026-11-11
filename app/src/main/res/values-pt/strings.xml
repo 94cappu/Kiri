@@ -13,4 +13,6 @@
     <string name="d_week">Segunda a domingo com marcações e lembretes</string>
     <string name="ch_name">Lembretes</string>
     <string name="ch_desc">Lembretes da Kiri</string>
+    <string name="w_big">Kiri + 2 semanas</string>
+    <string name="d_big">Fala da Kiri com esta semana e a próxima</string>
 </resources>

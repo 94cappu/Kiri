@@ -37,6 +37,11 @@ object Kiri {
     private val NUM = intArrayOf(R.id.d0, R.id.d1, R.id.d2, R.id.d3, R.id.d4, R.id.d5, R.id.d6)
     private val MARK = intArrayOf(R.id.m0, R.id.m1, R.id.m2, R.id.m3, R.id.m4, R.id.m5, R.id.m6)
     private val DOTS = intArrayOf(R.id.t0, R.id.t1, R.id.t2, R.id.t3, R.id.t4, R.id.t5, R.id.t6)
+    private val GCOL = intArrayOf(R.id.g0, R.id.g1, R.id.g2, R.id.g3, R.id.g4, R.id.g5, R.id.g6, R.id.g7, R.id.g8, R.id.g9, R.id.g10, R.id.g11, R.id.g12, R.id.g13)
+    private val GNAME = intArrayOf(R.id.gn0, R.id.gn1, R.id.gn2, R.id.gn3, R.id.gn4, R.id.gn5, R.id.gn6, R.id.gn7, R.id.gn8, R.id.gn9, R.id.gn10, R.id.gn11, R.id.gn12, R.id.gn13)
+    private val GNUM = intArrayOf(R.id.gd0, R.id.gd1, R.id.gd2, R.id.gd3, R.id.gd4, R.id.gd5, R.id.gd6, R.id.gd7, R.id.gd8, R.id.gd9, R.id.gd10, R.id.gd11, R.id.gd12, R.id.gd13)
+    private val GMARK = intArrayOf(R.id.gm0, R.id.gm1, R.id.gm2, R.id.gm3, R.id.gm4, R.id.gm5, R.id.gm6, R.id.gm7, R.id.gm8, R.id.gm9, R.id.gm10, R.id.gm11, R.id.gm12, R.id.gm13)
+    private val GDOTS = intArrayOf(R.id.gt0, R.id.gt1, R.id.gt2, R.id.gt3, R.id.gt4, R.id.gt5, R.id.gt6, R.id.gt7, R.id.gt8, R.id.gt9, R.id.gt10, R.id.gt11, R.id.gt12, R.id.gt13)
 
     private fun data(ctx: Context): JSONObject? {
         val s = ctx.getSharedPreferences("kiri", Context.MODE_PRIVATE).getString("data", null) ?: return null
@@ -292,6 +297,63 @@ object Kiri {
         return v
     }
 
+    private fun fillDays(v: RemoteViews, d: JSONObject?, count: Int, col: IntArray, name: IntArray, num: IntArray, mark: IntArray, dots: IntArray) {
+        val holColor = color(d?.optString("hol"), Color.parseColor("#FF6B6B"))
+        val today = key(Calendar.getInstance())
+        val days = d?.optJSONObject("days")
+        val c = Calendar.getInstance()
+        c.add(Calendar.DAY_OF_MONTH, -((c.get(Calendar.DAY_OF_WEEK) + 5) % 7))
+        for (i in 0 until count) {
+            val k = key(c)
+            val day = days?.optJSONObject(k)
+            val dow = c.get(Calendar.DAY_OF_WEEK)
+            val red = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY || holidayName(day) != null
+            v.setTextViewText(name[i], (if (lang == "en") WD_EN else if (lang == "zh") WD_ZH else WD_PT)[dow - 1])
+            v.setTextColor(name[i], if (red) holColor else 0xB3FFFFFF.toInt())
+            v.setTextViewText(num[i], c.get(Calendar.DAY_OF_MONTH).toString())
+            v.setTextColor(num[i], if (red) holColor else Color.WHITE)
+            val m = day?.optJSONObject("m")
+            if (m != null) {
+                v.setTextViewText(mark[i], glyph(m.optString("s")))
+                v.setTextColor(mark[i], color(m.optString("c"), Color.WHITE))
+            } else v.setTextViewText(mark[i], " ")
+            val sb = SpannableStringBuilder()
+            val arr = day?.optJSONArray("d")
+            if (arr != null) for (j in 0 until minOf(4, arr.length())) addColored(sb, "●", color(arr.optString(j), Color.WHITE))
+            if (sb.isEmpty()) sb.append(" ")
+            v.setTextViewText(dots[i], sb)
+            val paint = color(day?.optString("p", ""), 0)
+            val bg = when {
+                paint != 0 -> (paint and 0x00FFFFFF) or (if (k == today) 0xAA000000.toInt() else 0x66000000)
+                k == today -> 0x33FFFFFF
+                else -> Color.TRANSPARENT
+            }
+            v.setInt(col[i], "setBackgroundColor", bg)
+            c.add(Calendar.DAY_OF_MONTH, 1)
+        }
+    }
+
+    private fun shortDate(): String = when (lang) {
+        "en" -> SimpleDateFormat("MMM d", Locale.US)
+        "zh" -> SimpleDateFormat("M月d日", Locale.TRADITIONAL_CHINESE)
+        else -> SimpleDateFormat("d 'de' MMM", Locale("pt", "BR"))
+    }.format(Date())
+
+    fun buildBig(ctx: Context): RemoteViews {
+        val d = data(ctx)
+        val right = d?.optString("side", "esq") == "dir"
+        val v = RemoteViews(ctx.packageName, if (right) R.layout.widget_big_r else R.layout.widget_big)
+        background(v, R.id.root, clear(d, "big"))
+        mascot(ctx, v, R.id.img, "face")
+        v.setTextViewText(R.id.line, if (sleepy()) tl("Zzz… amanhã a gente continua.", "Zzz… let's continue tomorrow.", "Zzz… 明天再繼續吧。") else dailyLine(d, 0))
+        v.setTextViewText(R.id.today, todaySummary(d, false))
+        v.setTextViewText(R.id.wtitle, tl("Esta semana e a próxima", "This week and next", "本週與下週"))
+        v.setTextViewText(R.id.date, shortDate())
+        fillDays(v, d, 14, GCOL, GNAME, GNUM, GMARK, GDOTS)
+        openApp(ctx, v, R.id.root)
+        return v
+    }
+
     fun buildWeek(ctx: Context): RemoteViews {
         val d = data(ctx)
         val v = RemoteViews(ctx.packageName, R.layout.widget_week)
@@ -369,6 +431,10 @@ class CounterWidget : KiriBaseWidget() {
     override fun build(ctx: Context): RemoteViews = Kiri.buildCounter(ctx)
 }
 
+class BigWidget : KiriBaseWidget() {
+    override fun build(ctx: Context): RemoteViews = Kiri.buildBig(ctx)
+}
+
 class WeekWidget : KiriBaseWidget() {
     override fun build(ctx: Context): RemoteViews = Kiri.buildWeek(ctx)
 }
@@ -381,7 +447,8 @@ object WidgetUpdater {
             Pair(TalkWidget::class.java, { c: Context -> Kiri.buildTalk(c) }),
             Pair(BubbleWidget::class.java, { c: Context -> Kiri.buildBubble(c) }),
             Pair(WeekWidget::class.java, { c: Context -> Kiri.buildWeek(c) }),
-            Pair(CounterWidget::class.java, { c: Context -> Kiri.buildCounter(c) })
+            Pair(CounterWidget::class.java, { c: Context -> Kiri.buildCounter(c) }),
+            Pair(BigWidget::class.java, { c: Context -> Kiri.buildBig(c) })
         )
         for ((cls, build) in all) {
             val ids = m.getAppWidgetIds(ComponentName(ctx, cls))

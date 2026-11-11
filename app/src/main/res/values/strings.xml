@@ -13,4 +13,6 @@
     <string name="d_week">Monday to Sunday with marks and reminders</string>
     <string name="ch_name">Reminders</string>
     <string name="ch_desc">Kiri\'s reminders</string>
+    <string name="w_big">Kiri + 2 weeks</string>
+    <string name="d_big">Kiri\'s line and this week plus next</string>
 </resources>
