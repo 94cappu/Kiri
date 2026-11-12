@@ -17,11 +17,62 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : Activity() {
 
     private lateinit var web: WebView
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var startedAt = 0L
+
+    /* Atualização automática: baixa o index.html do GitHub Pages e usa no lugar do que veio no APK.
+       A origem continua appassets.androidplatform.net, então os dados (localStorage) não mudam. */
+    private val liveFile by lazy { File(filesDir, "web/index.html") }
+
+    private fun prepLive() {
+        val prefs = getSharedPreferences("kiri_update", MODE_PRIVATE)
+        val vc = try { packageManager.getPackageInfo(packageName, 0).versionCode } catch (e: Exception) { 0 }
+        if (prefs.getInt("apk", -1) != vc) {          // APK novo instalado: volta pro HTML que veio nele
+            liveFile.delete()
+            prefs.edit().putInt("apk", vc).putLong("checked", 0).apply()
+        }
+    }
+
+    private fun checkUpdate(force: Boolean) {
+        val prefs = getSharedPreferences("kiri_update", MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        if (!force && now - prefs.getLong("checked", 0) < 30 * 60 * 1000L) return
+        prefs.edit().putLong("checked", now).apply()
+        Thread {
+            try {
+                val c = URL("$UPDATE_URL?t=$now").openConnection() as HttpURLConnection
+                c.connectTimeout = 8000; c.readTimeout = 15000
+                c.setRequestProperty("Cache-Control", "no-cache")
+                if (c.responseCode != 200) return@Thread
+                val bytes = c.inputStream.use { it.readBytes() }
+                val txt = String(bytes, Charsets.UTF_8)
+                if (bytes.size < 50_000 || !txt.contains("KIRI_W") || !txt.contains("KiriBridge")) return@Thread
+                val cur = if (liveFile.exists()) liveFile.readBytes() else assets.open("index.html").use { it.readBytes() }
+                if (cur.contentEquals(bytes)) return@Thread
+                // só aceita se for igual ou mais nova que a que já está no celular
+                if (buildOf(txt) < buildOf(String(cur, Charsets.UTF_8))) return@Thread
+                liveFile.parentFile?.mkdirs()
+                val tmp = File(liveFile.parentFile, "index.tmp")
+                tmp.writeBytes(bytes)
+                tmp.renameTo(liveFile)
+                runOnUiThread {
+                    if (System.currentTimeMillis() - startedAt < 10_000) web.reload()
+                    else web.evaluateJavascript("window.kiriUpdated && window.kiriUpdated()", null)
+                }
+            } catch (e: Exception) { }
+        }.start()
+    }
+
+    private fun buildOf(html: String): Long =
+        Regex("name=\"kiri-build\" content=\"(\\d+)\"").find(html)?.groupValues?.get(1)?.toLongOrNull() ?: 0L
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +98,11 @@ class MainActivity : Activity() {
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                if (request.url.host == "appassets.androidplatform.net" && request.url.path == "/assets/index.html" && liveFile.exists()) {
+                    try {
+                        return WebResourceResponse("text/html", "utf-8", ByteArrayInputStream(liveFile.readBytes()))
+                    } catch (e: Exception) { }
+                }
                 return loader.shouldInterceptRequest(request.url)
             }
 
@@ -80,6 +136,10 @@ class MainActivity : Activity() {
                 }
             }
         }
+
+        startedAt = System.currentTimeMillis()
+        prepLive()
+        checkUpdate(true)
 
         if (savedInstanceState != null) {
             web.restoreState(savedInstanceState)
@@ -132,6 +192,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         web.onResume()
+        checkUpdate(false)
     }
 
     @Deprecated("Deprecated in Java")
@@ -147,5 +208,6 @@ class MainActivity : Activity() {
     companion object {
         private const val PICK_FILE = 42
         private const val ASK_NOTIF = 43
+        private const val UPDATE_URL = "https://94cappu.github.io/Kiri/index.html"
     }
 }
